@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace nauchka
 {
@@ -15,7 +16,7 @@ namespace nauchka
     {
 
         string n, f;
-        public Result(string file,string num)
+        public Result(string file, string num)
         {
             InitializeComponent();
             n = num;
@@ -35,39 +36,13 @@ namespace nauchka
             lecturerData.Columns.Add("signature", typeof(String));
 
         }
-        private void LoadData()
-        {
-
-            XmlDocument doc = new XmlDocument();
-            doc.Load("http://timetable.sbmt.by/shedule/lecturer/" + f);
-
-
-            XmlNodeList elemList = doc.GetElementsByTagName("lesson");
-            for (int i = 0; i < elemList.Count; i++)
-            {
-                DataRow tempRow = lecturerData.NewRow();
-
-                tempRow["type"] = elemList[i]["type"].InnerText;
-                tempRow["date"] = elemList[i]["date"].InnerText;
-                tempRow["time"] = elemList[i]["time"].InnerText;
-                lecturerData.Rows.Add(tempRow);
-            }
-
-        }
 
 
         private void Result_Load(object sender, EventArgs e)
         {
             label1.Text = n;
             CreateLecturerData();
-            try
-            {
-                LoadData();
-            }
-            catch
-            {
-                MessageBox.Show("Не удалось загрузить данные преподавателей");
-            }
+
             dataGridView1.DataSource = lecturerData;
             dataGridView1.Columns["number"].HeaderText = "№";
             dataGridView1.Columns["number"].Width = 100;
@@ -79,28 +54,35 @@ namespace nauchka
             dataGridView1.Columns["date"].Width = 150;
             dataGridView1.Columns["time"].HeaderText = "Время";
             dataGridView1.Columns["time"].Width = 150;
+            dataGridView1.Columns["hoursAmount"].HeaderText = "Количество часов";
+            dataGridView1.Columns["hoursAmount"].Width = 150;
+            dataGridView1.Columns["signature"].HeaderText = "Роспись";
+            dataGridView1.Columns["signature"].Width = 150;
+
+            string path = "http://timetable.sbmt.by/shedule/lecturer/" + f;
+
+            XDocument doc = XDocument.Load(path);
+            int i = 1;
+            var elemList =
+                from el in doc.Descendants("lesson")
+                where ((string)el.Element("group")).IndexOf(n) > -1
+                select el;
+
+            foreach (var elem in elemList)
+            {
+
+                DataRow tempRow = lecturerData.NewRow();
+                tempRow["type"] = elem.Element("type").Value;
+                tempRow["date"] = elem.Element("date").Value;
+                tempRow["time"] = elem.Element("time").Value;
+                tempRow["number"] = i;
+                tempRow["hoursAmount"] = 2;
+                i++;
+                lecturerData.Rows.Add(tempRow);
 
 
-
-            //dataSet1.ReadXml("http://timetable.sbmt.by/shedule/lecturer/" + f);
-
-            //dataGridView1.DataSource = dataSet1;
-
-
-            //DataTable lecturerTable = dataSet1.Tables["lesson"];
-
-            //foreach (DataRow workRow in lecturerData.Rows)
-            //{
-
-            //    DataRow tempRow = lecturerTable.NewRow();
-            //    tempRow["type"] = workRow["type"];
-            //    tempRow["date"] = workRow["date"];
-            //    tempRow["time"] = workRow["time"];
-
-            //    lecturerTable.Rows.Add(tempRow);
-            //}
-
-        }
+            }
         }
     }
+}
 
